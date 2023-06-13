@@ -12,9 +12,9 @@ global.__basedir = __dirname;
 
 const storage = multer.diskStorage({
   destination: function(req, file, cb){
-    //console.log(req.body)
-    const { userId } = req.body;
-    const path = `./uploads/${userId}`;
+    console.log(req.body)
+    const { userId,folderId } = req.body;
+    const path = `./uploads/${userId}/${folderId}`;
     fs.mkdirSync(path, { recursive: true });
     cb (null, path);
   },
