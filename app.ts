@@ -55,6 +55,16 @@ app.post("/upload", (req,res)=>{
  });
 });
 
+app.post('/createFolder', (req,res)=>{
+  console.log(req.body)
+  const { userId,folderId } = req.body;
+  const path = `./uploads/${userId}/${folderId}`;
+  fs.mkdirSync(path, { recursive: true });
+  return res.status(200).send({
+    message: 'File uploaded!'
+ });
+})
+
 let port = 8080;
 
 app.listen(port, () => {
