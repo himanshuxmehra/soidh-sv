@@ -10,6 +10,7 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import Joi from 'joi';
 import pino from 'pino';
+import { AuthJwtToken } from "./models/global";
 
 dotenv.config();
 
@@ -49,20 +50,6 @@ declare global {
 }
 global.__basedir = __dirname;
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    console.log(req.body);
-    const { userId, folderId } = req.body;
-    const path = `./uploads/${userId}/${folderId}`;
-    fs.mkdirSync(path, { recursive: true });
-    cb(null, path);
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
-
-const upload = multer({ storage: storage }).single("image");
 // const upload = multer({ storage });
 // app.use(cors());
 // app.use(express.json);
@@ -91,90 +78,72 @@ app.use(express.urlencoded({ extended: false }));
 //     message: 'File uploaded!'
 //  });
 // });
-app.post("/upload", upload, (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No image provided" });
-  }
+// app.post("/upload", upload, (req, res) => {
+//   if (!req.file) {
+//     return res.status(400).json({ error: "No image provided" });
+//   }
 
-  // Process the image (e.g., save it to a database or storage service)
-  // Here, we'll just send back a success response with the image details
-  // console.log(req)
-  const image = req.file;
-  // console.log(req.body)
+//   // Process the image (e.g., save it to a database or storage service)
+//   // Here, we'll just send back a success response with the image details
+//   // console.log(req)
+//   const image = req.file;
+//   // console.log(req.body)
 
-  res.status(200).json({
-    message: "Image uploaded successfully",
-    originalname: image.originalname,
-    mimetype: image.mimetype,
-    size: image.size,
-  });
-});
+//   res.status(200).json({
+//     message: "Image uploaded successfully",
+//     originalname: image.originalname,
+//     mimetype: image.mimetype,
+//     size: image.size,
+//   });
+// });
 
-app.get("/isUploaded", async (req, res) => {
-  try {
-    const rawData = await fs.readFile('data.json', 'utf-8');
-    const jsonData = JSON.parse(rawData);
+// app.get("/isUploaded", async (req, res) => {
+//   try {
+//     const rawData = await fs.readFile('data.json', 'utf-8');
+//     const jsonData = JSON.parse(rawData);
 
-    // Get the value from the query parameter
-    const searchValue = req.body.parameter as string;
+//     // Get the value from the query parameter
+//     const searchValue = req.body.parameter as string;
 
-    // Filter the data based on the searchValue
-    const filteredData = jsonData.filter((item: any) =>
-      item.name.toLowerCase().includes(searchValue.toLowerCase())
-    );
+//     // Filter the data based on the searchValue
+//     const filteredData = jsonData.filter((item: any) =>
+//       item.name.toLowerCase().includes(searchValue.toLowerCase())
+//     );
 
-    if (filteredData.length > 0) {
-      res.status(200).json({ message: 'Value found', data: filteredData });
-    } else {
-      res.status(404).json({ message: 'Value not found' });
-    }
-  } catch (error) {
-    console.error('Error reading data:', error);
-    res.status(500).json({ error: 'Failed to read data' });
-  }
-});
+//     if (filteredData.length > 0) {
+//       res.status(200).json({ message: 'Value found', data: filteredData });
+//     } else {
+//       res.status(404).json({ message: 'Value not found' });
+//     }
+//   } catch (error) {
+//     console.error('Error reading data:', error);
+//     res.status(500).json({ error: 'Failed to read data' });
+//   }
+// });
 
-app.post("/isUploaded", async (req, res) => {
-  const { filename, value } = req.body;
+// app.post("/isUploaded", async (req, res) => {
+//   const { filename, value } = req.body;
 
-  if (!filename || !value) {
-    return res.status(400).json({ error: "Both key and value are required" });
-  }
+//   if (!filename || !value) {
+//     return res.status(400).json({ error: "Both key and value are required" });
+//   }
 
-  try {
-    const rawData = await fs.readFile("data.json", "utf-8");
-    const jsonData = JSON.parse(rawData);
+//   try {
+//     const rawData = await fs.readFile("data.json", "utf-8");
+//     const jsonData = JSON.parse(rawData);
 
-    // Add the new key-value pair to the data
-    jsonData.push({ [filename]: value });
+//     // Add the new key-value pair to the data
+//     jsonData.push({ [filename]: value });
 
-    // Write the updated data back to the file
-    await fs.writeFile("data.json", JSON.stringify(jsonData, null, 2));
+//     // Write the updated data back to the file
+//     await fs.writeFile("data.json", JSON.stringify(jsonData, null, 2));
 
-    res.json({ message: "added successfully" });
-  } catch (error) {
-    console.error("Error adding key-value pair:", error);
-    res.status(500).json({ error: "Failed to add key-value pair" });
-  }
-});
-
-app.post("/createFolder", (req, res) => {
-  console.log(req.body);
-  const { userId, folderId } = req.body;
-  const path = `./uploads/${userId}/${folderId}`;
-  fs.mkdirSync(path, { recursive: true });
-  return res.status(200).send({
-    message: "File uploaded!",
-  });
-});
-
-app.post("/getFolders", (req, res) => {
-  console.log(req.body);
-  const { userId } = req.body;
-  return res.status(200).send({
-    message: "File uploaded!",
-  });
-});
+//     res.json({ message: "added successfully" });
+//   } catch (error) {
+//     console.error("Error adding key-value pair:", error);
+//     res.status(500).json({ error: "Failed to add key-value pair" });
+//   }
+// });
 
 
 
@@ -210,14 +179,14 @@ app.post(
 
       if (result.rows.length > 0) {
         logger.error("error: 'Phone number is already registered'");
-        return res.status(400).json({ error: 'Phone number is already registered' });
+        return res.status(200).json({ message: 'Phone number is already registered', success: true });
       }
 
       // If not registered, insert into the database
       const hashedPassword = await bcrypt.hash(phoneNumber, 10);
       await pool.query('INSERT INTO users (phone_number, password) VALUES ($1, $2)', [phoneNumber, hashedPassword]);
 
-      return res.status(200).json({ message: 'User registered successfully', success:true });
+      return res.status(200).json({ message: 'User registered successfully', success: true });
     } catch (error) {
       logger.error(error);
       handleDatabaseError(error, res);
@@ -246,7 +215,7 @@ app.post(
       // For now, let's generate a random 6-digit OTP
       const otp = await Math.floor(100000 + Math.random() * 900000);
       logger.info("OTP generated: ", otp)
-      return res.status(200).json({ data:{otp:otp} , success:true});
+      return res.status(200).json({ data: { otp: otp }, success: true });
     } catch (error) {
       logger.error(error);
 
@@ -283,13 +252,12 @@ app.post(
       }
 
       // Generate JWT token
-      const accountId = uuidv4();
+      const accountId = phoneNumber;
       const token = jwt.sign({ accountId, phoneNumber }, jwtSecret, { expiresIn: '72h' });
 
-      return res.status(200).json({ data:{token, accountId}, success:true });
+      return res.status(200).json({ data: { token, accountId }, success: true });
     } catch (error) {
       logger.error(error);
-
       handleDatabaseError(error, res);
     }
   })
@@ -297,12 +265,17 @@ app.post(
 
 
 // Authentication middleware
-const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.headers['authorization'];
+const authenticateToken = (req: AuthJwtToken, res: Response, next: NextFunction) => {
+  const token:string = req.headers['authorization']!.split(' ')[1];
+  
+  console.log("Token from the call::::: ",req.headers['authorization'])
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, jwtSecret, (err: any, user: any) => {
-    if (err) return res.sendStatus(403);
+    if (err) {
+      logger.error(err);
+      return res.sendStatus(403);
+    }
     req.user = user;
     next();
   });
@@ -332,7 +305,7 @@ app.post(
       const folderId = uuidv4();
 
       // Assuming you want to create a folder in the 'uploads' directory
-      const folderPath = `uploads/${accountId}/${folderId}_${folderName}`;
+      const folderPath = `uploads/${accountId}/${folderId}`;
 
       // Check if the folder already exists
       if (fs.existsSync(folderPath)) {
@@ -357,6 +330,112 @@ app.post(
   })
 );
 
+// Get folders for an account endpoint
+app.post(
+  '/get-folders',
+  authenticateToken,
+  asyncMiddleware(async (req: Request, res: Response) => {
+    try {
+      const { accountId } = req.body;
+
+      // Validate input
+      const schema = Joi.object({
+        accountId: Joi.string().required(),
+      });
+
+      const { error } = schema.validate(req.body);
+      if (error) {
+        return res.status(400).json({ error: 'Invalid input data' });
+      }
+      // Retrieve folders for the specified user from the database
+      const result = await pool.query('SELECT * FROM folders WHERE account_id = $1', [accountId]);
+      console.log(result.rows)
+      const responseObj = {
+        success: true,
+        message: 'Folders retrieved successfully',
+        data: {folders: result.rows},
+      };
+      // Send the list of folders in the response
+      res.status(200).json(responseObj);
+    } catch (error) {
+      logger.error(error)
+      handleDatabaseError(error, res);
+    }
+  })
+);
+
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    console.log("thsi is the upload: "req.body);
+    const { accountId, folderId } = req.body;
+    const path = `./uploads/${accountId}/${folderId}`;
+    fs.mkdirSync(path, { recursive: true });
+    cb(null, path);
+  },
+  filename: function (req, file, cb) {
+    cb(null, `${Date.now()}.png`);
+  },
+});
+
+const upload = multer({ storage: storage }).single("image");
+
+//Upload Media
+app.post(
+  '/upload-media',
+  authenticateToken,
+  upload,
+  asyncMiddleware(async (req: Request, res: Response) => {
+    try {
+      const { accountId, folderId } = req.body;
+
+      // Validate input
+      const schema = Joi.object({
+        accountId: Joi.string().required(),
+        folderId: Joi.string().required(),
+      });
+
+      console.log("Body:--- ", req.body)
+
+      const { error } = schema.validate(req.body);
+      if (error) {
+        return res.status(400).json({ error: 'Invalid input data' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: "No image provided" });
+      }
+    
+      // Process the image (e.g., save it to a database or storage service)
+      // Here, we'll just send back a success response with the image details
+      // console.log(req)
+      const image = req.file;
+      // console.log(req.body)
+
+      // Generate a UUID for the folder
+      const imageId = uuidv4();
+
+      // Assuming you want to create a folder in the 'uploads' directory
+      const folderPath = `uploads/${accountId}/${folderId}`;
+
+      // Check if the folder exists
+      if (!fs.existsSync(folderPath)) {
+        return res.status(400).json({ error: 'Folder doesn\'t exists' });
+      }
+
+      // Add an entry to the database
+      const result = await pool.query(
+        'INSERT INTO media (folder_id, account_id, image_id) VALUES ($1, $2, $3) RETURNING *',
+        [folderId, accountId, imageId]
+      );
+
+      return res.status(200).json({ message: 'Imaged Uploaded successfully', imageId });
+    } catch (error) {
+      handleDatabaseError(error, res);
+    }
+  })
+);
+
 
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
@@ -364,9 +443,9 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 app.get(
-  '/',(req: Request, res: Response)=>{
+  '/', (req: Request, res: Response) => {
     return res.sendStatus(200);
-  } 
+  }
 )
 app.listen(port, () => {
   console.log("dfsdfsdfsdfsd")
