@@ -11,6 +11,7 @@ import helmet from 'helmet';
 import Joi from 'joi';
 import pino from 'pino';
 import { AuthJwtToken } from "./models/global";
+import path from "path";
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ const corsOptions = {
 
 //app.use(cors(corsOptions));
 // app.use(helmet());
+
 app.use(express.json());
 
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -54,6 +56,7 @@ global.__basedir = __dirname;
 // app.use(cors());
 // app.use(express.json);
 app.use(express.urlencoded({ extended: false }));
+
 
 // app.post("/upload", (req,res)=>{
 //   //console.log(req.body);
@@ -266,9 +269,9 @@ app.post(
 
 // Authentication middleware
 const authenticateToken = (req: AuthJwtToken, res: Response, next: NextFunction) => {
-  const token:string = req.headers['authorization']!.split(' ')[1];
-  
-  console.log("Token from the call::::: ",req.headers['authorization'])
+  const token: string = req.headers['authorization']!.split(' ')[1];
+
+  console.log("Token from the call::::: ", req.headers['authorization'])
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, jwtSecret, (err: any, user: any) => {
@@ -353,7 +356,7 @@ app.post(
       const responseObj = {
         success: true,
         message: 'Folders retrieved successfully',
-        data: {folders: result.rows},
+        data: { folders: result.rows },
       };
       // Send the list of folders in the response
       res.status(200).json(responseObj);
@@ -364,17 +367,52 @@ app.post(
   })
 );
 
+// Get folder details
+app.post(
+  '/get-folder-details',
+  authenticateToken,
+  asyncMiddleware(async (req: Request, res: Response) => {
+    try {
+      const { accountId, folderId } = req.body;
+      // Validate input
+      const schema = Joi.object({
+        accountId: Joi.string().required(),
+        folderId: Joi.string().required()
+      });
+
+      const { error } = schema.validate(req.body);
+      if (error) {
+        logger.error(error);
+        return res.status(400).json({ error: 'Invalid input data' });
+      }
+      // Retrieve folders for the specified user from the database
+      const result = await pool.query('SELECT * FROM folders WHERE account_id = $1 AND folder_id = $2', [accountId, folderId]);
+      console.log(result.rows)
+      const responseObj = {
+        success: true,
+        message: 'Folders retrieved successfully',
+        data: { folder: result.rows },
+      };
+
+      // Send the list of folders in the response
+      res.status(200).json(responseObj);
+    } catch (error) {
+      logger.error(error)
+      handleDatabaseError(error, res);
+    }
+  })
+);
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    console.log("thsi is the upload: "req.body);
+    console.log("this is the upload: ", req.body);
     const { accountId, folderId } = req.body;
     const path = `./uploads/${accountId}/${folderId}`;
     fs.mkdirSync(path, { recursive: true });
     cb(null, path);
   },
   filename: function (req, file, cb) {
-    cb(null, `${Date.now()}.png`);
+    cb(null, `${req.body.imageId}.png`);
   },
 });
 
@@ -387,33 +425,33 @@ app.post(
   upload,
   asyncMiddleware(async (req: Request, res: Response) => {
     try {
-      const { accountId, folderId } = req.body;
+      const { accountId, folderId, imageId } = req.body;
 
       // Validate input
       const schema = Joi.object({
         accountId: Joi.string().required(),
         folderId: Joi.string().required(),
+        imageId: Joi.string().guid()
       });
 
       console.log("Body:--- ", req.body)
 
       const { error } = schema.validate(req.body);
       if (error) {
+        logger.error(error)
         return res.status(400).json({ error: 'Invalid input data' });
       }
 
       if (!req.file) {
+        logger.error(error)
         return res.status(400).json({ error: "No image provided" });
       }
-    
+
       // Process the image (e.g., save it to a database or storage service)
       // Here, we'll just send back a success response with the image details
       // console.log(req)
       const image = req.file;
       // console.log(req.body)
-
-      // Generate a UUID for the folder
-      const imageId = uuidv4();
 
       // Assuming you want to create a folder in the 'uploads' directory
       const folderPath = `uploads/${accountId}/${folderId}`;
@@ -429,13 +467,54 @@ app.post(
         [folderId, accountId, imageId]
       );
 
-      return res.status(200).json({ message: 'Imaged Uploaded successfully', imageId });
+      return res.status(200).json({ message: 'Imaged Uploaded successfully', data: { media: result.rows }, success: true });
     } catch (error) {
+      logger.error(error)
       handleDatabaseError(error, res);
     }
   })
 );
 
+
+// Get media for an folder endpoint
+app.post(
+  '/get-media',
+  authenticateToken,
+  asyncMiddleware(async (req: Request, res: Response) => {
+    try {
+      const { accountId, folderId } = req.body;
+
+      // Validate input
+      const schema = Joi.object({
+        accountId: Joi.string().required(),
+        folderId: Joi.string().guid()
+      });
+
+      const { error } = schema.validate(req.body);
+      if (error) {
+        return res.status(400).json({ error: 'Invalid input data' });
+      }
+      // Retrieve folders for the specified user from the database
+      const result = await pool.query('SELECT * FROM media WHERE account_id = $1 and folder_id = $2', [accountId, folderId]);
+      console.log(result.rows)
+      const responseObj = {
+        success: true,
+        message: 'Images retrieved successfully',
+        data: { media: result.rows },
+      };
+
+      logger.info(req.body)
+      // Send the list of folders in the response
+      res.status(200).json(responseObj);
+    } catch (error) {
+      logger.error(error)
+      handleDatabaseError(error, res);
+    }
+  })
+);
+
+// Serve static files from the 'uploads' folder, including subdirectories
+app.use('/uploads', express.static(path.resolve('./uploads')));
 
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
@@ -444,10 +523,10 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 });
 app.get(
   '/', (req: Request, res: Response) => {
+    logger.info(req)
     return res.sendStatus(200);
   }
 )
 app.listen(port, () => {
-  console.log("dfsdfsdfsdfsd")
   logger.info({ port }, 'Server is running');
 });
