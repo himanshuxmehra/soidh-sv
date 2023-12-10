@@ -255,10 +255,10 @@ app.post(
       }
 
       // Generate JWT token
-      const accountId = phoneNumber;
+      const result = await pool.query('SELECT * FROM users WHERE phone_number = $1', [phoneNumber]);
+      const accountId = result.rows[0].account_id;
       const token = jwt.sign({ accountId, phoneNumber }, jwtSecret, { expiresIn: '72h' });
-
-      return res.status(200).json({ data: { token, accountId }, success: true });
+      return res.status(200).json({ data: { token, accountId, phoneNumber }, success: true });
     } catch (error) {
       logger.error(error);
       handleDatabaseError(error, res);
@@ -348,6 +348,7 @@ app.post(
 
       const { error } = schema.validate(req.body);
       if (error) {
+        logger.error(error)
         return res.status(400).json({ error: 'Invalid input data' });
       }
       // Retrieve folders for the specified user from the database
@@ -504,6 +505,83 @@ app.post(
       };
 
       logger.info(req.body)
+      // Send the list of folders in the response
+      res.status(200).json(responseObj);
+    } catch (error) {
+      logger.error(error)
+      handleDatabaseError(error, res);
+    }
+  })
+);
+
+// Endpoint to insert a record into the sharing_folder table
+app.post('/share-folder',
+  authenticateToken,
+  asyncMiddleware(async (req: Request, res: Response) => {
+    try {
+      // Extract data from the form
+      const { folderId, phoneNumber, canEdit } = req.body;
+
+      // Validate form data (you might want to add more validation)
+      // Validate input
+      const schema = Joi.object({
+        phoneNumber: Joi.number().required(),
+        folderId: Joi.string().guid(),
+        canEdit: Joi.boolean().required(),
+      });
+
+      const { error } = schema.validate(req.body);
+      if (error) {
+        logger.error(error);
+
+        return res.status(400).json({ error: 'Invalid input data' });
+      }
+
+      // Insert record into the sharing_folder table
+      const result = await pool.query(
+        'INSERT INTO sharing_folder (folder_id, shared_with, can_edit) VALUES ($1, $2, $3) RETURNING *',
+        [folderId, phoneNumber, canEdit]
+      );
+
+      // Send the inserted record in the response
+      res.status(201).json({ success: true, data: result.rows[0] });
+    } catch (error: any) {
+      logger.error(error);
+      logger.error({ error: error.message, stack: error.stack }, 'Error sharing folder');
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  })
+);
+
+// Get shared folders for an account endpoint
+app.post(
+  '/get-shared-folders',
+  authenticateToken,
+  asyncMiddleware(async (req: Request, res: Response) => {
+    try {
+      const { phone_number } = req.body;
+
+      // Validate input
+      const schema = Joi.object({
+        phone_number: Joi.number().required(),
+      });
+
+      const { error } = schema.validate(req.body);
+      if (error) {
+      logger.error(error)
+
+        return res.status(400).json({ error: 'Invalid input data' });
+      }
+      // Retrieve folders for the specified user from the database
+      const result = await pool.query('SELECT * FROM sharing_folder WHERE shared_with = $1', [phone_number]);
+      console.log(result.rows)
+      const responseObj = {
+        success: true,
+        message: 'Folders retrieved successfully',
+        data: { folders: result.rows },
+      };
+
+      logger.info(responseObj);
       // Send the list of folders in the response
       res.status(200).json(responseObj);
     } catch (error) {
