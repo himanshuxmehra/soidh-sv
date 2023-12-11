@@ -39,7 +39,7 @@ CREATE TABLE media (
 ```sql
 CREATE TABLE sharing_folder (
   id SERIAL PRIMARY KEY,
-  folder_id VARCHAR(255) NOT NULL,
+  folder_id UUID NOT NULL,
   shared_with_phone_no VARCHAR(15) NOT NULL,
   can_edit BOOLEAN NOT NULL
 );
