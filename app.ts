@@ -559,8 +559,7 @@ app.post(
   authenticateToken,
   asyncMiddleware(async (req: Request, res: Response) => {
     try {
-      const { phone_number } = req.body;
-
+      let { phone_number } = req.body;
       // Validate input
       const schema = Joi.object({
         phone_number: Joi.number().required(),
@@ -572,8 +571,9 @@ app.post(
 
         return res.status(400).json({ error: 'Invalid input data' });
       }
+      phone_number = String(phone_number)
       // Retrieve folders for the specified user from the database
-      const result = await pool.query('SELECT * FROM sharing_folder WHERE shared_with = $1', [phone_number]);
+      const result = await pool.query('SELECT * FROM sharing_folder sf INNER JOIN folders f on f.folder_id = sf.folder_id WHERE sf.shared_with = $1', [phone_number]);
       console.log(result.rows)
       const responseObj = {
         success: true,
