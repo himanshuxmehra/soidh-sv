@@ -495,7 +495,7 @@ app.post(
         return res.status(400).json({ error: 'Invalid input data' });
       }
       // Retrieve folders for the specified user from the database
-      const result = await pool.query('SELECT * FROM media WHERE account_id = $1 and folder_id = $2', [accountId, folderId]);
+      const result = await pool.query('SELECT * FROM media WHERE folder_id = $2', [accountId, folderId]);
       console.log(result.rows)
       const responseObj = {
         success: true,
