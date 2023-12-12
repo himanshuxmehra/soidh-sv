@@ -374,10 +374,9 @@ app.post(
   authenticateToken,
   asyncMiddleware(async (req: Request, res: Response) => {
     try {
-      const { accountId, folderId } = req.body;
+      const { folderId } = req.body;
       // Validate input
       const schema = Joi.object({
-        accountId: Joi.string().required(),
         folderId: Joi.string().required()
       });
 
@@ -387,7 +386,7 @@ app.post(
         return res.status(400).json({ error: 'Invalid input data' });
       }
       // Retrieve folders for the specified user from the database
-      const result = await pool.query('SELECT * FROM folders WHERE account_id = $1 AND folder_id = $2', [accountId, folderId]);
+      const result = await pool.query('SELECT * FROM folders WHERE folder_id = $1', [folderId]);
       console.log(result.rows)
       const responseObj = {
         success: true,
