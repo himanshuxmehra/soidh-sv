@@ -271,7 +271,7 @@ app.post(
 const authenticateToken = (req: AuthJwtToken, res: Response, next: NextFunction) => {
   const token: string = req.headers['authorization']!.split(' ')[1];
 
-  console.log("Token from the call::::: ", req.headers['authorization'])
+  // console.log("Token from the call::::: ", req.headers['authorization'])
   if (!token) return res.sendStatus(401);
 
   jwt.verify(token, jwtSecret, (err: any, user: any) => {
@@ -352,7 +352,7 @@ app.post(
         return res.status(400).json({ error: 'Invalid input data' });
       }
       // Retrieve folders for the specified user from the database
-      const result = await pool.query('SELECT * FROM folders WHERE account_id = $1', [accountId]);
+      const result = await pool.query('SELECT f.*, (SELECT image_id from media where f.folder_id = media.folder_id limit 1 ) FROM folders f WHERE f.account_id = $1', [accountId]);
       console.log(result.rows)
       const responseObj = {
         success: true,
@@ -581,6 +581,43 @@ app.post(
       };
 
       logger.info(responseObj);
+      // Send the list of folders in the response
+      res.status(200).json(responseObj);
+    } catch (error) {
+      logger.error(error)
+      handleDatabaseError(error, res);
+    }
+  })
+);
+
+// Get recent media uploaded by an account endpoint
+app.post(
+  '/get-recent-media',
+  authenticateToken,
+  asyncMiddleware(async (req: Request, res: Response) => {
+    try {
+      const { accountId } = req.body;
+
+      // Validate input
+      const schema = Joi.object({
+        accountId: Joi.string().required(),
+        folderId: Joi.string().guid()
+      });
+
+      const { error } = schema.validate(req.body);
+      if (error) {
+        return res.status(400).json({ error: 'Invalid input data' });
+      }
+      // Retrieve folders for the specified user from the database
+      const result = await pool.query('SELECT * FROM media WHERE account_id = $1 ORDER BY created_at DESC limit 15', [accountId]);
+      console.log(result.rows)
+      const responseObj = {
+        success: true,
+        message: 'Images retrieved successfully',
+        data: { media: result.rows },
+      };
+
+      logger.info(req.body)
       // Send the list of folders in the response
       res.status(200).json(responseObj);
     } catch (error) {
