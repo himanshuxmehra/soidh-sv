@@ -52,6 +52,7 @@ app.use(authRoutes);
 app.use(folderRoutes);
 
 app.get('/', authenticateToken, (err: any, req: Request, res: Response) => {
+  console.log(req)
   logger.info(req);
   logger.error(err);
   return res.sendStatus(200);
