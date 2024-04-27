@@ -1,6 +1,4 @@
-
 ## Tables
-
 
 ```sql
   CREATE TABLE users (
@@ -23,13 +21,13 @@ CREATE TABLE folders (
 
 ```
 
-
 ```sql
 CREATE TABLE media (
   id SERIAL PRIMARY KEY,
   folder_id UUID NOT NULL,
   account_id BIGINT NOT NULL,
   image_id UUID NOT NULL,
+  is_deleted BOOLEAN,
   created_at TIMESTAMP DEFAULT NOW(),
   CONSTRAINT fk_account FOREIGN KEY (account_id) REFERENCES users(account_id),
   CONSTRAINT fk_folder FOREIGN KEY (folder_id) REFERENCES folders(folder_id)
