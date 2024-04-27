@@ -34,7 +34,7 @@ export const checkPhoneNumberRegistered = async (req: Request, res: Response) =>
     logger.error({ error }, 'Error checking phone number registration');
     return res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 export const generateOTP = async (req: Request, res: Response) => {
   try {
@@ -58,7 +58,7 @@ export const generateOTP = async (req: Request, res: Response) => {
     logger.error({ error }, 'Error generating OTP');
     return res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 export const verifyOTP = async (req: Request, res: Response) => {
   try {
@@ -101,4 +101,4 @@ export const verifyOTP = async (req: Request, res: Response) => {
     logger.error({ error }, 'Error verifying OTP');
     return res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};

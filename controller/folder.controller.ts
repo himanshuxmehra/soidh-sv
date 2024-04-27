@@ -24,7 +24,7 @@ export const createFolder = async (req: Request, res: Response) => {
     logger.error({ error }, 'Error creating folder');
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 export const getFoldersByAccountId = async (req: Request, res: Response) => {
   try {
@@ -47,7 +47,7 @@ export const getFoldersByAccountId = async (req: Request, res: Response) => {
     logger.error({ error }, 'Error getting folders');
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 export const getFolderById = async (req: Request, res: Response) => {
   try {
@@ -71,27 +71,25 @@ export const getFolderById = async (req: Request, res: Response) => {
     logger.error({ error }, 'Error getting folder details');
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 export const updateFolderName = async (req: Request, res: Response) => {
   try {
-
     res.status(200).json({ success: true });
   } catch (error) {
     logger.error({ error }, 'Error getting folder details');
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 export const deleteFolder = async (req: Request, res: Response) => {
   try {
-
     res.status(200).json({ success: true });
   } catch (error) {
     logger.error({ error }, 'Error getting folder details');
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 export const shareFolder = async (req: Request, res: Response) => {
   try {
@@ -116,7 +114,7 @@ export const shareFolder = async (req: Request, res: Response) => {
     logger.error({ error }, 'Error getting folder details');
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
 export const sharedFolders = async (req: Request, res: Response) => {
   try {
@@ -139,4 +137,4 @@ export const sharedFolders = async (req: Request, res: Response) => {
     logger.error({ error }, 'Error getting folder details');
     res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};

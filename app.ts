@@ -59,4 +59,4 @@ app.get('/', authenticateToken, (err: any, req: Request, res: Response) => {
 
 app.listen(port, () => {
   logger.info({ port }, 'Server is running');
-})
+});

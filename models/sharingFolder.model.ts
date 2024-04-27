@@ -7,4 +7,3 @@ interface SharingFolder {
   shared_with: string;
   can_edit: boolean;
 }
-

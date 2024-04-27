@@ -20,7 +20,7 @@ export async function createFolder(
     const folderPath = `uploads/${accountId}/${folderId}`;
     //s3
     if (fs.existsSync(folderPath)) {
-      logger.error('Folder Already Exists with userId generated:', folderId, accountId)
+      logger.error('Folder Already Exists with userId generated:', folderId, accountId);
       throw new Error('Folder already exists');
     }
 
@@ -61,12 +61,7 @@ export async function getFolderDetails(folderId: string): Promise<Folder[]> {
   }
 }
 
-
-export const shareFolder = async (
-  folderId: string,
-  phoneNumber: string,
-  canEdit: boolean,
-) => {
+export const shareFolder = async (folderId: string, phoneNumber: string, canEdit: boolean) => {
   try {
     const result = await pool.query(
       'INSERT INTO sharing_folder (folder_id, shared_with, can_edit) VALUES ($1, $2, $3) RETURNING *',
@@ -77,7 +72,7 @@ export const shareFolder = async (
     logger.error({ error }, 'Error sharing folder');
     throw error;
   }
-}
+};
 
 export const getSharedFolders = async (phoneNumber: string) => {
   try {
@@ -90,4 +85,4 @@ export const getSharedFolders = async (phoneNumber: string) => {
     logger.error({ error }, 'Error getting shared folders');
     throw error;
   }
-}
+};
